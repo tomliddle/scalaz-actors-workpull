@@ -1,0 +1,26 @@
+<configuration>
+    
+ 
+ <contextName>transcode-service</contextName>
+  
+  <appender name="SYSLOG" class="ch.qos.logback.classic.net.SyslogAppender">
+        <syslogHost>syslog</syslogHost>
+        <facility>local4</facility>
+        <suffixPattern>%-30([%contextName] [%thread] ) %-5level %logger{32} - %message%n%xException</suffixPattern>
+  </appender>
+  
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- encoders are assigned the type
+         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
+    <encoder>
+      <pattern>%-30([%contextName] [%thread] ) %-5level %logger{32} - %message%n%xException</pattern>
+    </encoder>
+  </appender>
+  
+
+  
+  <root level="debug">
+    <appender-ref ref="STDOUT" />
+  </root>
+  
+</configuration>

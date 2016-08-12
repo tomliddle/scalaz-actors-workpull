@@ -1,21 +1,25 @@
+package workpull
 
-import WorkPull._
+
+import java.util.concurrent.Executors
+
 import org.slf4j.LoggerFactory
+import workpull.WorkPull.{ParentMessage, RequestWork, Result, Work, WorkAvailable, WorkFailed, WorkerMessage, _}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
-import scalaz.Alpha.W
-import scalaz.concurrent.Actor
+import scalaz.concurrent.{Actor, Strategy}
 
 /**
   * Fetches the resource from the url given in the work message. Sends a message to the parent with the parsed links
   *
   */
 class Worker(parent: Actor[WorkerMessage]) {
+  implicit val pool = Executors.newFixedThreadPool(5)
+  implicit val s = Strategy.Executor
+  implicit val ec = ExecutionContext.fromExecutor(pool)
 
   private val log = LoggerFactory.getLogger(getClass)
-
-  val workerActor: Actor[ParentMessage] = Actor.actor { receive }
 
   parent ! RequestWork(this)
 
@@ -53,5 +57,8 @@ class Worker(parent: Actor[WorkerMessage]) {
      }
     }
   }
+
+
+  val workerActor: Actor[ParentMessage] = Actor.actor { receive }
 }
 

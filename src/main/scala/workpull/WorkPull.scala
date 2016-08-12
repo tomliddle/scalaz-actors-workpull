@@ -1,8 +1,8 @@
+package workpull
+
 import java.util.concurrent.Executors
-
-import WorkPull._
 import org.slf4j.LoggerFactory
-
+import workpull.WorkPull.{Result, Work, _}
 import scala.collection.immutable.Queue
 import scalaz.concurrent._
 
@@ -22,10 +22,8 @@ object WorkPull {
 	abstract class WorkerMessage(w: Worker)
 
 	def main(args: Array[String]): Unit = {
-
-
-		val wc = new WorkPull(5)
-
+    val list = (0 to 10000).map(x => s"number $x")
+		val wc = new WorkPull(100, Queue[String](list: _*))
 	}
 }
 
@@ -37,7 +35,7 @@ object WorkPull {
 class WorkPull(noOfWorkers: Int, queue: Queue[String]) {
 
 	private val log = LoggerFactory.getLogger(getClass)
-	private val workers  = (1 to noOfWorkers).map(_ => new Worker(parent))
+
 
   @volatile private var result = Map[String, String]()
   @volatile private var _queue = queue
@@ -72,6 +70,8 @@ class WorkPull(noOfWorkers: Int, queue: Queue[String]) {
       }
   }
   }
+
+  private val workers  = (1 to noOfWorkers).map(_ => new Worker(parent))
 }
 
 
