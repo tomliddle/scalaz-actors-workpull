@@ -9,5 +9,5 @@ Can define the work done in a function.
 
 Future work
 Implement back pressure
-Allow different functions not just string to string!
+Implement HA - if one Worker fails
 
