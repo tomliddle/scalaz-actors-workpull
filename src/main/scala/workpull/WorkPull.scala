@@ -5,8 +5,10 @@ import java.util.concurrent.Executors
 import org.slf4j.LoggerFactory
 import workpull.WorkPull.{Work, _}
 import workpull.Worker.{RequestWork, Result, WorkFailed, WorkerMessage}
+
 import scala.collection.immutable.Queue
 import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 import scalaz.concurrent._
 
 
@@ -17,7 +19,7 @@ object WorkPull {
 
   abstract class ParentMessage()
 	case class WorkAvailable() extends ParentMessage
-	case class Work[T](work: T) extends ParentMessage
+	case class Work[T](job: T) extends ParentMessage
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -37,16 +39,19 @@ object WorkPull {
  *
 	* @param noOfWorkers no of actors processing urls
 	*/
-class WorkPull[T, U](noOfWorkers: Int, queue: Queue[T], task: (T => U)) {
+class WorkPull[T: ClassTag, U: ClassTag](noOfWorkers: Int, queue: Queue[T], task: (T => U)) {
 
   @volatile private var _results = Map[T, U]()
   @volatile private var _queue = queue
   @volatile private var active = 0
 
+  private val tClazz = implicitly[ClassTag[T]].runtimeClass
+  private val uClazz = implicitly[ClassTag[U]].runtimeClass
+
 	val parent: Actor[WorkerMessage] = Actor.actor {
     (m: WorkerMessage) => m match {
 
-      case Result(_, id: T, res: U) =>
+      case Result(_, id: T, res: U) if tClazz.isInstance(id) && uClazz.isInstance(res) =>
         active = active - 1
 
         log.debug(s"active count is now $active $res")

@@ -3,7 +3,9 @@ package workpull
 import org.slf4j.LoggerFactory
 import workpull.WorkPull.{ParentMessage, Work, WorkAvailable, _}
 import workpull.Worker._
+
 import scala.concurrent.ExecutionContext
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 import scalaz.concurrent.Actor
 
@@ -29,9 +31,10 @@ object Worker {
   * Note there isn't much logic in here so we can test the task separately. No need to roll out akka test ;)
   *
   */
-class Worker[T, U](parent: Actor[WorkerMessage], task: (T => U))(implicit val ec: ExecutionContext) extends AbstractWorker {
+class Worker[T: ClassTag, U](parent: Actor[WorkerMessage], task: (T => U))(implicit val ec: ExecutionContext) extends AbstractWorker {
 
   private val log = LoggerFactory.getLogger(getClass)
+  private val tClazz = implicitly[ClassTag[T]].runtimeClass
 
   // Request the work once we start up
   parent ! RequestWork(this)
@@ -44,15 +47,15 @@ class Worker[T, U](parent: Actor[WorkerMessage], task: (T => U))(implicit val ec
         parent ! RequestWork(this)
 
       // We have received some work, do it and return the results
-      case Work(key: T) =>
-        Try(task(key)) match {
+      case Work(job: T) if tClazz.isInstance(job) =>
+        Try(task(job)) match {
           // A successful retrieval, notify the master
           case Success(w) =>
-            parent ! Result(this, key, w)
+            parent ! Result(this, job, w)
 
           // A failure notify the master also so we can count down the requests
           case Failure(e) =>
-            parent ! WorkFailed(this, key)
+            parent ! WorkFailed(this, job)
 
         }
         parent ! RequestWork(this)
